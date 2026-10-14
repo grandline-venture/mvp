@@ -24,3 +24,99 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes grandlineHeroEnter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+@keyframes grandlineGlowBreathe {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+@keyframes grandlineOrbitDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(24px, -18px, 0) scale(1.06); }
+}
+
+@keyframes grandlineScrollHint {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(7px); opacity: 1; }
+}
+
+.grandline-hero-content > * {
+  animation: grandlineHeroEnter 850ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.grandline-hero-content > *:nth-child(1) { animation-delay: 80ms; }
+.grandline-hero-content > *:nth-child(2) { animation-delay: 180ms; }
+.grandline-hero-content > *:nth-child(3) { animation-delay: 280ms; }
+.grandline-hero-content > *:nth-child(4) { animation-delay: 380ms; }
+.grandline-hero-content > *:nth-child(5) { animation-delay: 480ms; }
+.grandline-hero-content > *:nth-child(6) { animation-delay: 620ms; }
+
+.grandline-hero-glow {
+  animation: grandlineGlowBreathe 8s ease-in-out infinite;
+}
+
+.grandline-hero-orbit {
+  animation: grandlineOrbitDrift 14s ease-in-out infinite;
+}
+
+.grandline-scroll-cue {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  transform: translateX(-50%);
+  color: #6f687b;
+  pointer-events: none;
+}
+
+.grandline-scroll-cue span {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(to bottom, rgba(192, 132, 252, 0.75), transparent);
+  animation: grandlineScrollHint 1.8s ease-in-out infinite;
+}
+
+.grandline-scroll-cue small {
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+}
+
+.grandline-stat {
+  animation: grandlineHeroEnter 700ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.grandline-stat:nth-child(1) { animation-delay: 680ms; }
+.grandline-stat:nth-child(2) { animation-delay: 760ms; }
+.grandline-stat:nth-child(3) { animation-delay: 840ms; }
+.grandline-stat:nth-child(4) { animation-delay: 920ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .grandline-hero-content > *,
+  .grandline-stat,
+  .grandline-hero-glow,
+  .grandline-hero-orbit,
+  .grandline-scroll-cue span {
+    animation: none !important;
+  }
+
+  .grandline-scroll-cue {
+    display: none;
+  }
+}
