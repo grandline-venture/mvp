@@ -180,6 +180,7 @@ function Nav({
   const [scrolled, setScrolled] = useState(false);
   const [openMenu, setOpenMenu] = useState<(string | null)>(null);
   const [openSub, setOpenSub] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -280,6 +281,7 @@ function Nav({
   function go(target: string) {
     setOpenMenu(null);
     setOpenSub(0);
+    setMobileMenuOpen(false);
     onNavigate(target);
   }
 
@@ -294,7 +296,7 @@ function Nav({
   };
 
   return (
-    <nav ref={navRef} style={{
+    <nav ref={navRef} className="site-nav" style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
       background: scrolled ? "rgba(7,7,10,0.95)" : "transparent",
       backdropFilter: scrolled ? "blur(24px)" : "none",
@@ -304,14 +306,14 @@ function Nav({
       display: "flex", alignItems: "center", justifyContent: "space-between",
       height: 64,
     }}>
-      <div onClick={() => go("Home")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+      <div className="site-nav-brand" onClick={() => go("Home")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
         <LogoIcon size={30} />
         <span style={{ color: C.white, fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 15.5, letterSpacing: "0.04em" }}>
           GRANDLINE<span style={{ color: C.accentLight, marginLeft: 4 }}>CAPITAL</span>
         </span>
       </div>
 
-      <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+      <div className="site-nav-links" style={{ display: "flex", gap: 2, alignItems: "center" }}>
         {["Home"].map((l) => (
           <button key={l} onClick={() => go(l)} style={navBtn(page === l)}>{l}</button>
         ))}
@@ -399,7 +401,7 @@ function Nav({
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div className="site-nav-actions" style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <div style={{
           background: C.sebi, border: `1px solid ${C.sebiBorder}`,
           borderRadius: 8, padding: "5px 11px", display: "flex", alignItems: "center", gap: 6,
@@ -432,6 +434,22 @@ function Nav({
           </> 
         )}
       </div>
+      <button
+        className="site-nav-toggle"
+        onClick={() => setMobileMenuOpen((open) => !open)}
+        aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-expanded={mobileMenuOpen}
+      >
+        <span /><span /><span />
+      </button>
+      {mobileMenuOpen && (
+        <div className="site-mobile-menu">
+          {["Home", "IndStocks", "USStocks", "MutualFund", "Markets", "Private Market", "AI Advisor", "News", "Research", "Blog", "About"].map((target) => (
+            <button key={target} onClick={() => go(target)}>{target === "IndStocks" ? "Indian Equities" : target === "USStocks" ? "US Stocks" : target === "MutualFund" ? "Mutual Funds" : target}</button>
+          ))}
+          <button className="site-mobile-menu-primary" onClick={() => go(isLoggedIn ? "Dashboard" : "Login")}>{isLoggedIn ? "Portfolio Dashboard" : "Log in / Get Started"}</button>
+        </div>
+      )}
     </nav>
   );
 }
@@ -630,7 +648,7 @@ function HomePage({ setPage, prices }: { setPage: (page: string) => void; prices
             Trade and invest across all major asset classes from a unified, institutional-grade dashboard.
           </p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        <div className="responsive-card-grid responsive-card-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
           {[
             { name: "Indian Equities", desc: "NSE & BSE stocks, F&O, ETFs", sub: "10,000+ instruments", target: "IndStocks", badge: "LIVE" },
             { name: "US Stocks", desc: "NYSE, NASDAQ, ADRs", sub: "6,000+ instruments", target: "USStocks", badge: "LIVE" },
@@ -666,7 +684,7 @@ function HomePage({ setPage, prices }: { setPage: (page: string) => void; prices
       <SectionDivider />
 
       <RevealOnScroll style={{ padding: "80px 8%" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+        <div className="responsive-feature-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
           <RevealOnScroll direction="left">
             <Tag color={C.accentLight}>AI-Powered Intelligence</Tag>
             <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 38, fontWeight: 800, margin: "18px 0 18px", letterSpacing: "-0.02em", color: C.white, lineHeight: 1.15 }}>
@@ -690,7 +708,7 @@ function HomePage({ setPage, prices }: { setPage: (page: string) => void; prices
       <SectionDivider />
 
       <RevealOnScroll style={{ padding: "80px 8%" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
+        <div className="responsive-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
           <div>
             <Tag color={C.gold}>Research & Insights</Tag>
             <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 34, fontWeight: 800, margin: "14px 0 8px", letterSpacing: "-0.02em", color: C.white }}>Market Intelligence Hub</h2>
@@ -702,7 +720,7 @@ function HomePage({ setPage, prices }: { setPage: (page: string) => void; prices
             <button onClick={() => setPage("Blog")} style={outlineBtn}>Blog</button>
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 18 }}>
+        <div className="responsive-card-grid responsive-card-grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 18 }}>
           {[
             { category: "MARKET NEWS", title: "FII Inflows Hit 3-Month High; NIFTY Eyes 25,000", time: "2 hours ago", color: C.accentLight, target: "News" },
             { category: "RESEARCH", title: "India Macro Outlook: A Singapore Investor's Guide", time: "1 day ago", color: C.gold, target: "Research" },
@@ -808,7 +826,7 @@ function MarketsPage({ prices }: { prices: any }) {
             }}>{c.replace("_", " ")}</button>
           ))}
         </div>
-        <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+        <div className="responsive-data-table" style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr 1fr 1fr 1fr", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: FONT_BODY, fontSize: 11, color: C.textMuted, letterSpacing: "0.07em", textTransform: "uppercase" }}>
             <span>Instrument</span><span>Live Price</span><span>Change</span><span>% Change</span><span>Trend</span>
           </div>
@@ -953,7 +971,7 @@ function USStocksPage({ prices }: { prices: any }) {
           })}
         </div>
 
-        <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+        <div className="responsive-data-table" style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(140px, 2.5fr) repeat(4, minmax(70px, 1fr))", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, fontFamily: FONT_BODY, fontSize: 11, color: C.textMuted, letterSpacing: "0.07em", textTransform: "uppercase" }}>
             <span>Company</span><span>Live Price (USD)</span><span>Change</span><span>% Chg</span><span>Trend</span>
           </div>
@@ -1058,7 +1076,7 @@ function DashboardPage({ prices, onNavigate }: { prices: any, onNavigate: (page:
   return (
     <div style={{ background: C.bg, minHeight: "100vh", color: C.text, paddingTop: 40 }}>
       <div style={{ padding: "28px 5% 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+        <div className="dashboard-title-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
           <div>
             <p style={{ color: C.textSub, fontFamily: FONT_BODY, fontSize: 13, margin: "0 0 4px" }}>Good morning, Investor ·
               <span style={{ color: C.green, marginLeft: 6 }}>● Live Yahoo Finance Feed</span>
@@ -1070,7 +1088,7 @@ function DashboardPage({ prices, onNavigate }: { prices: any, onNavigate: (page:
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${C.border}`, marginBottom: 26 }}>
+        <div className="dashboard-tabs" style={{ display: "flex", gap: 4, borderBottom: `1px solid ${C.border}`, marginBottom: 26 }}>
           {tabs.map((t: string) => (
             <button key={t} onClick={() => setActiveTab(t)} style={{
               background: "none", border: "none", cursor: "pointer", padding: "10px 18px",
@@ -1086,7 +1104,7 @@ function DashboardPage({ prices, onNavigate }: { prices: any, onNavigate: (page:
       <div style={{ padding: "0 5% 40px" }}>
         {activeTab === "Overview" && (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
+            <div className="responsive-card-grid responsive-card-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
               {[
                 { label: "Portfolio Value", val: `₹${totalCurrent.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`, sub: "Total current value", color: C.text },
                 { label: "Total P&L", val: `${pnl >= 0 ? "+" : ""}₹${pnl.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`, sub: `${pnlPct}% overall`, color: pnl >= 0 ? C.green : C.red },
@@ -1101,9 +1119,9 @@ function DashboardPage({ prices, onNavigate }: { prices: any, onNavigate: (page:
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
+            <div className="dashboard-main-grid" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+        <div className="responsive-data-table" style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
                   <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 15, color: C.white }}>Holdings (Live LTP)</span>
                     <Tag>{portfolio.length} Positions</Tag>
