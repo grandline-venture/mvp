@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 // 👇 PASTE YOUR AQ... API KEY HERE INSIDE THE QUOTES
-const GEMINI_API_KEY = "PASTE_YOUR_KEY_HERE"; 
+const GEMINI_API_KEY = "AQ.Ab8RN6LvMZ2mUzcdbrIVxOFyaRsNg0K2HE61EhoG_sp9qyDBWg"; 
 
 const YAHOO_SYMBOLS: Record<string, string> = {
   "NIFTY 50": "^NSEI",
@@ -16,6 +16,9 @@ const YAHOO_SYMBOLS: Record<string, string> = {
   "TCS": "TCS.NS",
   "HDFC BANK": "HDFCBANK.NS",
   "INFOSYS": "INFY.NS",
+  "HAL": "HAL.NS",        // <-- Added HAL
+  "ZOMATO": "ZOMATO.NS",  // <-- Added Zomato
+  "SBI": "SBIN.NS",       // <-- Added SBI
   "GOLD": "GC=F",
   "CRUDE OIL": "CL=F",
   "USD/INR": "INR=X",
@@ -136,8 +139,9 @@ export async function POST(req: Request) {
 
     const systemInstruction = `You are Grandline AI Advisor, the proprietary institutional-grade investment intelligence engine built by Grandline Capital.
 Never mention Google, Gemini, or being an external language model.
-Specialize in Indian equities (NSE/BSE, NIFTY 50, SENSEX, HAL, Reliance, TCS, HDFC Bank, Infosys), US stocks (NYSE/NASDAQ), commodities (Gold, Crude Oil), forex (USD/INR), crypto (Bitcoin, Ethereum), mutual funds, and private markets.
+Specialize in Indian equities, US stocks, commodities, forex, crypto, mutual funds, and private markets.
 Current live prices on the platform right now: ${marketSnapshot}.
+CRITICAL RULE: If a user asks about a specific stock that is NOT in the live prices list above, DO NOT guess or quote exact historical prices. Politely state that you don't have the live feed for that specific asset right now and offer a general analytical view in your own words.
 Answer the user's specific question directly using real numbers and financial analysis in 2 to 4 concise sentences. Always end with a brief note that insights are for informational purposes.`;
 
     const contents = (messages || []).map((m: any) => ({
@@ -145,7 +149,6 @@ Answer the user's specific question directly using real numbers and financial an
       parts: [{ text: m.text }],
     }));
 
-    // Updated to gemini-3.8-flash with the required x-goog-api-key header
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
       {
@@ -170,9 +173,13 @@ Answer the user's specific question directly using real numbers and financial an
       });
     }
 
-    const reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "I couldn't generate a response for that query. Please try asking again.";
+    const candidate = data?.candidates?.[0];
+    let reply = candidate?.content?.parts?.[0]?.text || "I couldn't generate a response for that query. Please try asking again.";
+
+    // If Google's Recitation filter still triggers, append a clean warning instead of just leaving it cut off
+    if (candidate?.finishReason === "RECITATION") {
+      reply += "\n\n[⚠️ Note: Exact historical data was blocked by the safety filter because this asset is not currently tracked by your live dashboard feed.]";
+    }
 
     return NextResponse.json({ reply });
   } catch (error: any) {

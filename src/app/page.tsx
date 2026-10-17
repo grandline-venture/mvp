@@ -37,6 +37,9 @@ const tickers = [
   { sym: "TCS", base: 2254.30, change: 18.20, pct: 0.81, cat: "stock" },
   { sym: "HDFC BANK", base: 746.25, change: -6.15, pct: -0.82, cat: "stock" },
   { sym: "INFOSYS", base: 1079.90, change: 11.40, pct: 1.07, cat: "stock" },
+  { sym: "HAL", base: 4300.00, change: 45.00, pct: 1.05, cat: "stock" },
+  { sym: "ZOMATO", base: 195.00, change: 2.50, pct: 1.30, cat: "stock" },
+  { sym: "SBI", base: 830.00, change: 5.20, pct: 0.63, cat: "stock" },
   { sym: "GOLD", base: 143750, change: 420, pct: 0.29, cat: "commodity" },
   { sym: "CRUDE OIL", base: 8260, change: -45, pct: -0.54, cat: "commodity" },
   { sym: "USD/INR", base: 96.10, change: 0.08, pct: 0.08, cat: "forex" },
@@ -532,17 +535,16 @@ function MarketsPage({ prices }: { prices: any }) {
           ))}
         </div>
       </div>
+      <Footer setPage={() => {}} />
     </div>
   );
 }
 
-// ─── SECONDARY PAGES ────────────────────────────────────────────────────────
 function IndStocksPage({ prices }: { prices: any }) {
   return (
     <div style={{ background: C.bg, minHeight: "100vh", color: C.text, paddingTop: 40, padding: "40px 6%" }}>
       <Tag color={C.accentLight}>NSE · BSE · F&O</Tag>
       <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: 36, fontWeight: 800, margin: "12px 0 6px", color: C.white, letterSpacing: "-0.02em" }}>Indian Equities</h1>
-      <p style={{ color: C.textSub, fontSize: 15, fontFamily: FONT_BODY }}>Live NSE & BSE data across all sectors.</p>
     </div>
   );
 }
