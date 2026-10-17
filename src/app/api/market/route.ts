@@ -2,24 +2,23 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// 👇 PASTE YOUR AQ... API KEY HERE INSIDE THE QUOTES
+const GEMINI_API_KEY = "PASTE_YOUR_KEY_HERE"; 
+
 const YAHOO_SYMBOLS: Record<string, string> = {
-  // Indices
   "NIFTY 50": "^NSEI",
   "SENSEX": "^BSESN",
   "INDIA VIX": "^INDIAVIX",
   "S&P 500": "^GSPC",
   "NASDAQ": "^IXIC",
   "DOW JONES": "^DJI",
-  // Indian Stocks (NSE)
   "RELIANCE": "RELIANCE.NS",
   "TCS": "TCS.NS",
   "HDFC BANK": "HDFCBANK.NS",
   "INFOSYS": "INFY.NS",
-  // Commodities & Forex
   "GOLD": "GC=F",
   "CRUDE OIL": "CL=F",
   "USD/INR": "INR=X",
-  // US Stocks
   "AAPL": "AAPL",
   "MSFT": "MSFT",
   "GOOGL": "GOOGL",
@@ -32,14 +31,10 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 
 async function fetchYahooQuote(name: string, yahooSym: string) {
   try {
-    // range=5d&interval=1d guarantees we get the true previous trading day's close
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
-      yahooSym
-    )}?interval=1d&range=5d`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d`;
     const res = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
       cache: "no-store",
     });
@@ -50,23 +45,14 @@ async function fetchYahooQuote(name: string, yahooSym: string) {
     if (!meta || meta.regularMarketPrice == null) return null;
 
     const price = Number(meta.regularMarketPrice);
-
-    // Get valid daily closes from the 5-day history to find yesterday's exact close
     const rawCloses: (number | null)[] = result?.indicators?.quote?.[0]?.close || [];
     const closes = rawCloses.filter((c): c is number => typeof c === "number" && !isNaN(c));
 
     let prevClose = Number(meta.regularMarketPreviousClose || meta.previousClose || 0);
-    if (!prevClose && closes.length >= 2) {
-      // Compare against the second-to-last daily candle close
-      prevClose = closes[closes.length - 2];
-    } else if (!prevClose) {
-      prevClose = Number(meta.chartPreviousClose || price);
-    }
+    if (!prevClose && closes.length >= 2) prevClose = closes[closes.length - 2];
+    else if (!prevClose) prevClose = Number(meta.chartPreviousClose || price);
 
-    // If prevClose is still identical to price but we have 2+ daily closes, use closes[closes.length - 2]
-    if (Math.abs(price - prevClose) < 0.0001 && closes.length >= 2) {
-      prevClose = closes[closes.length - 2];
-    }
+    if (Math.abs(price - prevClose) < 0.0001 && closes.length >= 2) prevClose = closes[closes.length - 2];
 
     const change = +(price - prevClose).toFixed(2);
     const pct = prevClose ? +((change / prevClose) * 100).toFixed(2) : 0;
@@ -80,36 +66,25 @@ async function fetchYahooQuote(name: string, yahooSym: string) {
 export async function GET() {
   try {
     const entries = Object.entries(YAHOO_SYMBOLS);
-
-    // Fetch Yahoo Finance quotes + CoinGecko Crypto + ExchangeRate USD/INR in parallel
     const [yahooResults, cryptoRes, forexRes] = await Promise.all([
       Promise.all(entries.map(([name, sym]) => fetchYahooQuote(name, sym))),
-      fetch(
-        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=inr,usd&include_24hr_change=true",
-        { cache: "no-store" }
-      ).catch(() => null),
+      fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=inr,usd&include_24hr_change=true", { cache: "no-store" }).catch(() => null),
       fetch("https://open.er-api.com/v6/latest/USD", { cache: "no-store" }).catch(() => null),
     ]);
 
     const quotes: Record<string, { price: number; change: number; pct: number }> = {};
     for (const r of yahooResults) {
-      if (r) {
-        quotes[r.sym] = { price: r.price, change: r.change, pct: r.pct };
-      }
+      if (r) quotes[r.sym] = { price: r.price, change: r.change, pct: r.pct };
     }
 
-    // Ensure USD/INR has a fallback if Yahoo INR=X is delayed
     if (!quotes["USD/INR"] && forexRes && forexRes.ok) {
       const fxData = await forexRes.json();
       const inrRate = fxData?.rates?.INR;
-      if (inrRate) {
-        quotes["USD/INR"] = { price: +Number(inrRate).toFixed(2), change: 0.05, pct: 0.06 };
-      }
+      if (inrRate) quotes["USD/INR"] = { price: +Number(inrRate).toFixed(2), change: 0.05, pct: 0.06 };
     }
 
     const usdInr = quotes["USD/INR"]?.price || 86.5;
 
-    // Fetch exact Bitcoin & Ethereum in INR from CoinGecko
     if (cryptoRes && cryptoRes.ok) {
       const cryptoData = await cryptoRes.json();
       if (cryptoData?.bitcoin?.inr) {
@@ -126,29 +101,6 @@ export async function GET() {
       }
     }
 
-    // Fallback to Yahoo BTC-USD * USD/INR if CoinGecko rate-limits
-    if (!quotes["BITCOIN"]) {
-      const btcUsd = await fetchYahooQuote("BITCOIN", "BTC-USD");
-      if (btcUsd) {
-        quotes["BITCOIN"] = {
-          price: Math.round(btcUsd.price * usdInr),
-          change: Math.round(btcUsd.change * usdInr),
-          pct: btcUsd.pct,
-        };
-      }
-    }
-    if (!quotes["ETHEREUM"]) {
-      const ethUsd = await fetchYahooQuote("ETHEREUM", "ETH-USD");
-      if (ethUsd) {
-        quotes["ETHEREUM"] = {
-          price: Math.round(ethUsd.price * usdInr),
-          change: Math.round(ethUsd.change * usdInr),
-          pct: ethUsd.pct,
-        };
-      }
-    }
-
-    // Convert Gold (USD/oz -> INR/10g) and Crude Oil (USD/bbl -> INR/bbl)
     if (quotes["GOLD"]) {
       const goldInr10g = Math.round((quotes["GOLD"].price / 31.1035) * 10 * usdInr);
       const goldChgInr = Math.round((quotes["GOLD"].change / 31.1035) * 10 * usdInr);
@@ -160,15 +112,72 @@ export async function GET() {
       quotes["CRUDE OIL"] = { price: crudeInr, change: crudeChgInr, pct: quotes["CRUDE OIL"].pct };
     }
 
-    return NextResponse.json({
-      success: true,
-      quotes,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch market data" },
-      { status: 500 }
+    return NextResponse.json({ success: true, quotes, timestamp: new Date().toISOString() });
+  } catch {
+    return NextResponse.json({ success: false, error: "Failed to fetch market data" }, { status: 500 });
+  }
+}
+
+// ─── AI ADVISOR CHAT HANDLER (POST /api/market) ───────────────────────────────
+export async function POST(req: Request) {
+  try {
+    const { messages, prices } = await req.json();
+    const apiKey = process.env.GEMINI_API_KEY || GEMINI_API_KEY;
+
+    if (!apiKey || apiKey === "PASTE_YOUR_KEY_HERE" || apiKey === "") {
+      return NextResponse.json({
+        reply: "⚠️ Setup Needed: Open `src/app/api/market/route.ts` in VS Code and paste your AQ... key on Line 6!",
+      });
+    }
+
+    const marketSnapshot = Array.isArray(prices)
+      ? prices.map((p: any) => `${p.sym}: ${p.price} (${p.pct >= 0 ? "+" : ""}${p.pct}%)`).join(", ")
+      : "Live market feed active.";
+
+    const systemInstruction = `You are Grandline AI Advisor, the proprietary institutional-grade investment intelligence engine built by Grandline Capital.
+Never mention Google, Gemini, or being an external language model.
+Specialize in Indian equities (NSE/BSE, NIFTY 50, SENSEX, HAL, Reliance, TCS, HDFC Bank, Infosys), US stocks (NYSE/NASDAQ), commodities (Gold, Crude Oil), forex (USD/INR), crypto (Bitcoin, Ethereum), mutual funds, and private markets.
+Current live prices on the platform right now: ${marketSnapshot}.
+Answer the user's specific question directly using real numbers and financial analysis in 2 to 4 concise sentences. Always end with a brief note that insights are for informational purposes.`;
+
+    const contents = (messages || []).map((m: any) => ({
+      role: m.role === "ai" ? "model" : "user",
+      parts: [{ text: m.text }],
+    }));
+
+    // Updated to gemini-3.8-flash with the required x-goog-api-key header
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
+      {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey.trim()
+        },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          contents,
+          generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
+        }),
+      }
     );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json({
+        reply: `⚠️ Gemini API Error: ${data?.error?.message || "Invalid API Key or blocked request."}`,
+      });
+    }
+
+    const reply =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "I couldn't generate a response for that query. Please try asking again.";
+
+    return NextResponse.json({ reply });
+  } catch (error: any) {
+    return NextResponse.json({
+      reply: `⚠️ Server Error: ${error?.message || "Failed to connect to AI engine."}`,
+    });
   }
 }
