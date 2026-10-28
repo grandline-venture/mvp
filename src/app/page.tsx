@@ -22,6 +22,15 @@ interface OrderRecord { id: string; sym: string; side: "BUY" | "SELL"; qty: numb
 interface NewsItem { id: string; title: string; publisher: string; link: string; time: string; region: "INDIA" | "US"; tag: string; }
 interface WalletTx { id: string; date: string; method: string; type: "DEPOSIT" | "WITHDRAWAL" | "MARGIN_BLOCK"; amount: number; status: string; }
 
+export interface ExecuteOrderPayload {
+  sym: string;
+  side: "BUY" | "SELL";
+  qty: number;
+  price: number;
+  type: string;
+  assetType?: "STOCK" | "MF" | "IPO";
+}
+
 interface IPOItem {
   id: string;
   company: string;
@@ -244,8 +253,6 @@ function CompactPortfolioAndSecondaryNav({
   onSelectSymbol: (sym: string, name: string, cat: string) => void;
 }) {
   const isPro = userTier === "premium";
-
-  // Filter only Equity Stocks for Stock count
   const stockOnlyPositions = positions.filter((p) => (p.assetType || "STOCK") === "STOCK");
 
   const invested = positions.reduce((sum, p) => sum + p.avg * p.qty, 0);
@@ -263,7 +270,6 @@ function CompactPortfolioAndSecondaryNav({
   }, 0);
   const todayPnlPct = currentVal > 0 ? (todayPnl / currentVal) * 100 : 0;
 
-  // Merged "My Stocks" and "Positions" into one unified tab as requested
   const tabs: { id: HubTab; label: string; badge?: string }[] = [
     { id: "Explore", label: "Explore" },
     { id: "Terminal", label: isPro ? "Pro Terminal" : "Terminal", badge: isPro ? "L2" : undefined },
@@ -278,7 +284,6 @@ function CompactPortfolioAndSecondaryNav({
 
   return (
     <div style={{ background: "#090D16", borderBottom: `1px solid ${C.border}` }}>
-      {/* Enlarged, Prominent Portfolio Telemetry Bar with Dedicated Portfolio Icon Button */}
       <div
         style={{
           padding: "14px 3%",
@@ -293,7 +298,6 @@ function CompactPortfolioAndSecondaryNav({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 28, flexWrap: "wrap" }}>
-          {/* Clickable Portfolio Icon Badge */}
           <div
             onClick={() => setActiveTab("PortfolioDetail")}
             title="Click to open Full Portfolio & Grandline AI Analysis"
@@ -352,7 +356,6 @@ function CompactPortfolioAndSecondaryNav({
           </div>
         </div>
 
-        {/* Right Side: Wallet Pill + Full Portfolio & Grandline AI Icon Button */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div
             onClick={() => setActiveTab("Wallet")}
@@ -398,7 +401,6 @@ function CompactPortfolioAndSecondaryNav({
         </div>
       </div>
 
-      {/* Secondary Navigation Bar */}
       <div style={{ padding: "0 3%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 48, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4, overflowX: "auto" }}>
           {tabs.map((t) => {
@@ -443,7 +445,7 @@ function CompactPortfolioAndSecondaryNav({
   );
 }
 
-// ─── 1. FULL PORTFOLIO ANALYTICS & GRANDLINE AI DOCTOR (OPENED BY ICON) ───────
+// ─── 1. FULL PORTFOLIO ANALYTICS & GRANDLINE AI DOCTOR ───────────────────────
 function FullPortfolioAndAIView({
   positions,
   prices,
@@ -459,14 +461,13 @@ function FullPortfolioAndAIView({
   userTier: UserTier;
   stocksOnly?: boolean;
   onOpenStockInTerminal: (sym: string, name: string, cat: string) => void;
-  onExecuteOrder: (order: { sym: string; side: "BUY" | "SELL"; qty: number; price: number; type: string }) => void;
+  onExecuteOrder: (order: ExecuteOrderPayload) => void;
 }) {
   const isPro = userTier === "premium";
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("Analyze my portfolio concentration, beta risk, profit-booking levels, and suggest 2 hedging or rebalancing moves.");
 
-  // If opened via "My Stocks", filter strictly to equity stocks
   const targetPositions = useMemo(() => {
     if (!stocksOnly) return positions;
     return positions.filter((p) => (p.assetType || "STOCK") === "STOCK");
@@ -578,7 +579,6 @@ function FullPortfolioAndAIView({
         </button>
       </div>
 
-      {/* 5-Card Institutional KPI Strip */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20, fontFamily: FONT_MONO }}>
         <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "16px" }}>
           <div style={{ fontSize: 10.5, color: C.textSub }}>ACCOUNT NET WORTH</div>
@@ -613,7 +613,6 @@ function FullPortfolioAndAIView({
         </div>
       </div>
 
-      {/* Grandline AI Portfolio Doctor Panel */}
       <div style={{ background: "linear-gradient(135deg, rgba(12,14,20,0.95), rgba(15,23,42,0.9))", border: `1px solid ${isPro ? C.proBlue : C.accent}`, borderRadius: 10, padding: 20, marginBottom: 22 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -663,7 +662,6 @@ function FullPortfolioAndAIView({
         )}
       </div>
 
-      {/* Allocation Bar Strip */}
       <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "16px 20px", marginBottom: 20 }}>
         <div style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, color: C.textSub, marginBottom: 10 }}>
           PORTFOLIO ALLOCATION WEIGHTS BY STOCK
@@ -694,7 +692,6 @@ function FullPortfolioAndAIView({
         </div>
       </div>
 
-      {/* Detailed Holdings Table */}
       <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", fontFamily: FONT_MONO }}>
         <div style={{ display: "grid", gridTemplateColumns: "1.8fr 0.7fr 0.9fr 0.9fr 1fr 1fr 0.8fr 1.1fr 1.1fr", padding: "12px 18px", borderBottom: `1px solid ${C.border}`, fontSize: 10.5, color: C.textSub, fontWeight: 700 }}>
           <span>STOCK / EXCHANGE</span>
@@ -770,7 +767,7 @@ function PnLCalendarView({ orders }: { orders: OrderRecord[] }) {
   const daysData = useMemo(() => {
     const arr = [];
     for (let d = 1; d <= 31; d++) {
-      const dayOfWeek = (d + 3) % 7; // 0 = Sun, 6 = Sat
+      const dayOfWeek = (d + 3) % 7;
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       if (isWeekend || d > 28) {
         arr.push({ day: d, pnl: 0, trades: 0, status: "FLAT", topSym: "—" });
@@ -836,7 +833,6 @@ function PnLCalendarView({ orders }: { orders: OrderRecord[] }) {
         </div>
       </div>
 
-      {/* Summary KPI Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20, fontFamily: FONT_MONO }}>
         <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
           <div style={{ fontSize: 10.5, color: C.textSub }}>NET REALIZED P&amp;L ({selectedMonth})</div>
@@ -863,7 +859,6 @@ function PnLCalendarView({ orders }: { orders: OrderRecord[] }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: 18, alignItems: "start" }}>
-        {/* 7-Column Calendar Heatmap Grid */}
         <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: 20 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, marginBottom: 10, fontFamily: FONT_MONO, fontSize: 11, color: C.textSub, textAlign: "center", fontWeight: 700 }}>
             {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((d) => <span key={d}>{d}</span>)}
@@ -923,7 +918,6 @@ function PnLCalendarView({ orders }: { orders: OrderRecord[] }) {
           </div>
         </div>
 
-        {/* Right: Selected Day Session Inspector */}
         <div style={{ background: C.bgCard, border: `1px solid ${C.borderGlow}`, borderRadius: 10, padding: 20, fontFamily: FONT_MONO }}>
           <Tag color={inspected.pnl >= 0 ? C.green : C.red}>SESSION AUDIT · OCT {inspected.day}, 2026</Tag>
           <div style={{ fontSize: 26, fontWeight: 800, color: inspected.pnl >= 0 ? C.green : C.red, margin: "12px 0 4px" }}>
@@ -1032,7 +1026,6 @@ function StockScreenersView({
         </div>
       </div>
 
-      {/* Preset Strategy Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 20 }}>
         {scans.map((sc) => {
           const active = activeScan === sc.id;
@@ -1055,7 +1048,6 @@ function StockScreenersView({
         })}
       </div>
 
-      {/* Screener Results Table */}
       <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", fontFamily: FONT_MONO }}>
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 0.9fr 0.8fr 0.8fr 0.9fr 1fr 1.1fr", padding: "12px 18px", borderBottom: `1px solid ${C.border}`, fontSize: 10.5, color: C.textSub, fontWeight: 700 }}>
           <span>SYMBOL &amp; NAME</span>
@@ -1122,7 +1114,7 @@ function WatchlistManagerView({
   watchlist: any[];
   setWatchlist: (fn: any) => void;
   onOpenStockInTerminal: (sym: string, name: string, cat: string) => void;
-  onExecuteOrder: (order: { sym: string; side: "BUY" | "SELL"; qty: number; price: number; type: string }) => void;
+  onExecuteOrder: (order: ExecuteOrderPayload) => void;
 }) {
   const [activeGroup, setActiveGroup] = useState<string>("All Watchlists");
   const groups = ["All Watchlists", "Core India", "US Tech & AI", "Defence & PSU"];
@@ -1239,7 +1231,7 @@ function WatchlistManagerView({
 
               <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                 <button
-                  onClick={() => onExecuteOrder({ sym: item.sym, side: "BUY", qty: 10, price: item.price, type: "WATCHLIST_BUY" })}
+                  onClick={() => onExecuteOrder({ sym: item.sym, side: "BUY", qty: 10, price: item.price, type: "WATCHLIST_BUY", assetType: "STOCK" })}
                   style={{ background: C.green, color: "#05070B", border: "none", borderRadius: 4, padding: "5px 10px", fontSize: 10.5, fontWeight: 800, cursor: "pointer", fontFamily: FONT_MONO }}
                 >
                   BUY
@@ -1300,7 +1292,6 @@ function DetailedWalletView({
     }, 0);
   }, [positions, prices]);
 
-  // 80% haircut collateral margin on equity holdings
   const collateralMargin = Math.round(currentHoldingsVal * 0.8);
   const totalTradingPower = cashBalance + collateralMargin;
   const withdrawableCash = Math.max(0, cashBalance - 5000);
@@ -1335,7 +1326,6 @@ function DetailedWalletView({
         </p>
       </div>
 
-      {/* 5-Card Margin Telemetry Strip */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 22, fontFamily: FONT_MONO }}>
         <div style={{ background: C.bgCard, border: `1px solid ${C.borderGlow}`, borderRadius: 8, padding: 16 }}>
           <div style={{ fontSize: 10.5, color: C.textSub }}>AVAILABLE CASH MARGIN</div>
@@ -1345,7 +1335,7 @@ function DetailedWalletView({
         <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
           <div style={{ fontSize: 10.5, color: C.textSub }}>USED DELIVERY MARGIN</div>
           <div style={{ fontSize: 21, fontWeight: 800, color: C.white, marginTop: 6 }}>₹{usedMargin.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</div>
-          <div style={{ fontSize: 10.5, color: C.textMuted, marginTop: 4 }}>Allocated inPositions</div>
+          <div style={{ fontSize: 10.5, color: C.textMuted, marginTop: 4 }}>Allocated in Positions</div>
         </div>
         <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
           <div style={{ fontSize: 10.5, color: C.textSub }}>PLEDGED COLLATERAL (80%)</div>
@@ -1365,7 +1355,6 @@ function DetailedWalletView({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "400px 1fr", gap: 18, alignItems: "start" }}>
-        {/* Left: Deposit & Withdraw Execution Box */}
         <div style={{ background: C.bgCard, border: `1px solid ${C.borderGlow}`, borderRadius: 10, padding: 20 }}>
           <div style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, color: C.proBlueLight, marginBottom: 12 }}>
             INSTANT CAPITAL TRANSFER DESK
@@ -1444,7 +1433,6 @@ function DetailedWalletView({
           </div>
         </div>
 
-        {/* Right: Recent Ledger & Settlement History */}
         <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", fontFamily: FONT_MONO }}>
           <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700, color: C.textSub }}>
             <span>RECENT WALLET &amp; SETTLEMENT LEDGER</span>
@@ -1472,7 +1460,7 @@ function IPODeskView({
   onExecuteOrder,
 }: {
   cashBalance: number;
-  onExecuteOrder: (order: { sym: string; side: "BUY" | "SELL"; qty: number; price: number; type: string; assetType?: "STOCK" | "MF" | "IPO" }) => void;
+  onExecuteOrder: (order: ExecuteOrderPayload) => void;
 }) {
   const [statusFilter, setStatusFilter] = useState<"ALL" | "OPEN" | "UPCOMING" | "LISTED">("ALL");
   const [selectedIPO, setSelectedIPO] = useState<IPOItem>(IPO_PIPELINE_DATA[0]);
@@ -1887,7 +1875,7 @@ function ExploreStocksHub({
   activeHubTab: HubTab;
   setActiveHubTab: (t: HubTab) => void;
   onOpenStockInTerminal: (sym: string, name: string, cat: string) => void;
-  onExecuteOrder: (order: { sym: string; side: "BUY" | "SELL"; qty: number; price: number; type: string; assetType?: "STOCK" | "MF" | "IPO" }) => void;
+  onExecuteOrder: (order: ExecuteOrderPayload) => void;
   onAddCash: (amt: number, method: string) => void;
   onWithdrawCash: (amt: number) => void;
 }) {
@@ -1904,7 +1892,6 @@ function ExploreStocksHub({
     return (list.length > 0 ? list : prices.slice().reverse()).slice(0, 5);
   }, [prices]);
 
-  // 1. Full Portfolio & Grandline AI Doctor (Opened by Portfolio Icon in Bar)
   if (activeHubTab === "PortfolioDetail") {
     return (
       <FullPortfolioAndAIView
@@ -1919,7 +1906,6 @@ function ExploreStocksHub({
     );
   }
 
-  // 2. My Stocks (Strictly Equity Stocks Only, Merged with Positions)
   if (activeHubTab === "My Stocks") {
     return (
       <FullPortfolioAndAIView
@@ -1934,7 +1920,6 @@ function ExploreStocksHub({
     );
   }
 
-  // 3. Watchlist Manager
   if (activeHubTab === "Watchlist") {
     return (
       <WatchlistManagerView
@@ -1947,17 +1932,14 @@ function ExploreStocksHub({
     );
   }
 
-  // 4. Stock Screeners
   if (activeHubTab === "Screeners") {
     return <StockScreenersView prices={prices} onOpenStockInTerminal={onOpenStockInTerminal} />;
   }
 
-  // 5. P&L Calendar Heatmap
   if (activeHubTab === "P&L Calendar") {
     return <PnLCalendarView orders={orders} />;
   }
 
-  // 6. Detailed Wallet & Margin Ledger
   if (activeHubTab === "Wallet") {
     return (
       <DetailedWalletView
@@ -1970,12 +1952,10 @@ function ExploreStocksHub({
     );
   }
 
-  // 7. Primary Market IPO Desk
   if (activeHubTab === "IPOs") {
     return <IPODeskView cashBalance={cashBalance} onExecuteOrder={onExecuteOrder} />;
   }
 
-  // 8. Executed Orders Book
   if (activeHubTab === "Orders") {
     return (
       <div style={{ padding: "28px 4%", background: C.bg, minHeight: "82vh", color: C.text }}>
@@ -1996,14 +1976,12 @@ function ExploreStocksHub({
     );
   }
 
-  // Default: INDstocks / Explore View
   return (
     <div style={{ padding: "24px 4% 48px", background: C.bg, minHeight: "85vh", color: C.text, fontFamily: FONT_BODY, fontVariantNumeric: "tabular-nums" }}>
       <div style={{ fontSize: 14, color: C.textSub, marginBottom: 18 }}>
         INDstocks / <strong style={{ color: C.white }}>{activeHubTab}</strong>
       </div>
 
-      {/* TOP GAINERS TODAY SECTION */}
       <div style={{ marginBottom: 36 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 19, fontWeight: 700, color: C.white, margin: 0 }}>Top Gainers today</h2>
@@ -2095,7 +2073,6 @@ function ExploreStocksHub({
         </div>
       </div>
 
-      {/* TOP LOSERS TODAY SECTION */}
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: 19, fontWeight: 700, color: C.white, margin: 0 }}>Top Losers today</h2>
@@ -2473,7 +2450,7 @@ function InteractiveStockChart({ symbol, currentPrice, range, isPro = false, hei
   );
 }
 
-// ─── GLASSMORPHIC NAVIGATION BAR (WITH PORTFOLIO ICON BUTTON) ─────────────────
+// ─── GLASSMORPHIC NAVIGATION BAR ──────────────────────────────────────────────
 function Nav({ page, isLoggedIn, userTier, onToggleTier, onNavigate, onLogout, onOpenHubTab }: any) {
   const [scrolled, setScrolled] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -3289,7 +3266,7 @@ const MUTUAL_FUNDS_DATA = [
   { id: "mf-6", name: "SBI ELSS Tax Saver Fund Direct Plan - Growth", amc: "SBI Mutual Fund", category: "ELSS Tax Saver", risk: "High", rating: 5, nav: 438.20, aumCr: 27650, expenseDirect: 0.92, expenseRegular: 1.68, minSip: 500, cagr1Y: 33.1, cagr3Y: 25.4, cagr5Y: 26.9 },
 ];
 
-function MutualFundPage({ cashBalance, onExecuteOrder }: any) {
+function MutualFundPage({ cashBalance, onExecuteOrder }: { cashBalance: number; onExecuteOrder: (order: ExecuteOrderPayload) => void }) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedFund, setSelectedFund] = useState(MUTUAL_FUNDS_DATA[0]);
   const [investMode, setInvestMode] = useState<"SIP" | "LUMPSUM">("SIP");
@@ -3459,7 +3436,7 @@ export default function App() {
     { id: "ORD-9018", sym: "RELIANCE.NS", side: "BUY", qty: 25, price: 1310, type: "CNC", time: "09:42:01", status: "FILLED" },
   ]);
 
-  function handleExecuteOrder(order: { sym: string; side: "BUY" | "SELL"; qty: number; price: number; type: string; assetType?: "STOCK" | "MF" | "IPO" }) {
+  function handleExecuteOrder(order: ExecuteOrderPayload) {
     const total = order.qty * order.price;
     if (order.side === "BUY") {
       setCashBalance((prev) => prev - total);
