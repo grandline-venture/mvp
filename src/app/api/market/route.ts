@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// Set your Google Gemini API Key here or in .env.local (GEMINI_API_KEY)
+// Set your API Key here or in .env.local (GEMINI_API_KEY)
 const GEMINI_API_KEY = "AQ.Ab8RN6LvMZ2mUzcdbrIVxOFyaRsNg0K2HE61EhoG_sp9qyDBWg";
 
 const YAHOO_SYMBOLS: Record<string, string> = {
@@ -17,6 +17,7 @@ const YAHOO_SYMBOLS: Record<string, string> = {
   "HDFC BANK": "HDFCBANK.NS",
   "INFOSYS": "INFY.NS",
   "HAL": "HAL.NS",
+  "BEL": "BEL.NS",
   "ZOMATO": "ZOMATO.NS",
   "SBI": "SBIN.NS",
   "GOLD": "GC=F",
@@ -30,8 +31,6 @@ const YAHOO_SYMBOLS: Record<string, string> = {
   "META": "META",
   "TSLA": "TSLA",
   "BRK.B": "BRK-B",
-  "BITCOIN": "BTC-USD",
-  "ETHEREUM": "ETH-USD",
 };
 
 interface OHLCPoint {
@@ -60,8 +59,6 @@ const FALLBACK_NEWS: NewsItem[] = [
   { id: "us-2", title: "Mega-cap AI infrastructure capex guidance drives institutional call-option block prints on NVDA and MSFT", publisher: "Wall Street Derivatives", link: "#", time: "14m ago", region: "US", tag: "NASDAQ / OPTIONS" },
   { id: "in-3", title: "HAL & Bharat Electronics record elevated delivery percentages on NSE cash tape amid defence order book expansion", publisher: "Equities Research India", link: "#", time: "19m ago", region: "INDIA", tag: "BSE / EQUITIES" },
   { id: "us-3", title: "S&P 500 dark-pool block volume registers +14% above 30-day moving average into afternoon New York session", publisher: "US Institutional Tape", link: "#", time: "24m ago", region: "US", tag: "S&P 500 / DMA" },
-  { id: "in-4", title: "SEBI circular on institutional algorithmic execution efficiency and T+0 settlement liquidity enters next phase", publisher: "Regulatory Wire India", link: "#", time: "31m ago", region: "INDIA", tag: "SEBI / POLICY" },
-  { id: "us-4", title: "Apple and Alphabet institutional rebalancing flows tracked across primary NYSE and NASDAQ crossing networks", publisher: "Global Equities Desk", link: "#", time: "38m ago", region: "US", tag: "US TECH" },
 ];
 
 async function fetchLiveFinancialNews(): Promise<NewsItem[]> {
@@ -121,7 +118,6 @@ async function fetchLiveFinancialNews(): Promise<NewsItem[]> {
 
     if (items.length === 0) return FALLBACK_NEWS;
 
-    // Interleave India and US news for balanced scrolling
     const merged: NewsItem[] = [];
     const ind = items.filter((i) => i.region === "INDIA");
     const us = items.filter((i) => i.region === "US");
@@ -281,13 +277,11 @@ export async function GET(req: Request) {
     const batchSymbols = searchParams.get("symbols");
     const newsQuery = searchParams.get("news");
 
-    // 1. Live Financial News Wire Request (India + US)
     if (newsQuery === "true") {
       const news = await fetchLiveFinancialNews();
       return NextResponse.json({ success: true, news, timestamp: new Date().toISOString() });
     }
 
-    // 2. Single Chart Request
     if (symbolQuery) {
       const yahooSym = YAHOO_SYMBOLS[symbolQuery] || symbolQuery;
       let chartPoints = await fetchYahooChart(yahooSym, rangeQuery);
@@ -306,7 +300,6 @@ export async function GET(req: Request) {
       });
     }
 
-    // 3. Batch Market Data Request
     let targetSymbols: string[] = [];
     if (batchSymbols) {
       targetSymbols = batchSymbols.split(",").filter(Boolean);
@@ -351,16 +344,16 @@ export async function POST(req: Request) {
     const isPremium = tier === "premium";
 
     const systemInstruction = isPremium
-      ? `You are Grandline Quant AI Pro, an institutional quantitative research engine.
-Never mention Google or third-party brands.
+      ? `You are Grandline AI Pro, an institutional quantitative research engine.
+Never mention Google or third-party brands. Do not discuss cryptocurrency.
 Live market prices: ${marketSnapshot}.
 Deliver precise, structured quantitative analysis including:
-1. Volume-Weighted Average Price (VWAP) positioning and key support/resistance zones
+1. Order Block zones, liquidity sweeps, and VWAP positioning
 2. Institutional order flow and derivatives hedging perspective
 3. Quantitative risk metrics and volatility parameters.
 Keep answers concise, direct, and professional without emojis.`
       : `You are Grandline AI Advisor for standard retail investors.
-Never mention Google or third-party brands.
+Never mention Google or third-party brands. Do not discuss cryptocurrency.
 Live market prices: ${marketSnapshot}.
 Answer questions directly with professional market commentary in 2 to 4 concise sentences without emojis.`;
 
